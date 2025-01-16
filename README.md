@@ -47,12 +47,20 @@ scRNAbaseR empowers researchers to perform essential preprocessing, analysis, an
 #### Installation
 
 ```
-git clone https://github.com/jkubis96/JSEQ_scRNAseq.git -b v2.3.2
+install.packages("https://github.com/jkubis96/scRNAbaseR/raw/refs/heads/main/scRNAbaseR_0.1.0.tar.gz", repos = NULL, type = "source")
 ```
+
+
+#### Loading
+
+```
+library(scRNAbaseR)
+```
+
 
 #### Documentation
 
-* [scRNAbaseR](https://github.com/Hoohm/dropSeqPipe)
+* [scRNAbaseR](https://jkubis96.github.io/scRNAbaseR/index.html)
 
 <br />
 
