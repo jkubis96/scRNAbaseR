@@ -1,38 +1,38 @@
-#scripts
-if (!require("dplyr")) {
-  install.packages("dplyr", dependencies = TRUE)
-}
-library(dplyr)
-
-# Sprawdzenie i instalacja pakietu pheatmap
-if (!require("pheatmap")) {
-  install.packages("pheatmap", dependencies = TRUE)
-}
-library(pheatmap)
-
-# Sprawdzenie i instalacja pakietu umap
-if (!require("umap")) {
-  install.packages("umap", dependencies = TRUE)
-}
-library(umap)
-
-# Sprawdzenie i instalacja pakietu dbscan
-if (!require("dbscan")) {
-  install.packages("dbscan", dependencies = TRUE)
-}
-library(dbscan)
-
-# Sprawdzenie i instalacja pakietu ggplot2
-if (!require("ggplot2")) {
-  install.packages("ggplot2", dependencies = TRUE)
-}
-library(ggplot2)
-
-# Sprawdzenie i instalacja pakietu ggrepel
-if (!require("ggrepel")) {
-  install.packages("ggrepel", dependencies = TRUE)
-}
-library(ggrepel)
+# #scripts
+# if (!require("dplyr")) {
+#   install.packages("dplyr", dependencies = TRUE)
+# }
+# library(dplyr)
+# 
+# # Sprawdzenie i instalacja pakietu pheatmap
+# if (!require("pheatmap")) {
+#   install.packages("pheatmap", dependencies = TRUE)
+# }
+# library(pheatmap)
+# 
+# # Sprawdzenie i instalacja pakietu umap
+# if (!require("umap")) {
+#   install.packages("umap", dependencies = TRUE)
+# }
+# library(umap)
+# 
+# # Sprawdzenie i instalacja pakietu dbscan
+# if (!require("dbscan")) {
+#   install.packages("dbscan", dependencies = TRUE)
+# }
+# library(dbscan)
+# 
+# # Sprawdzenie i instalacja pakietu ggplot2
+# if (!require("ggplot2")) {
+#   install.packages("ggplot2", dependencies = TRUE)
+# }
+# library(ggplot2)
+# 
+# # Sprawdzenie i instalacja pakietu ggrepel
+# if (!require("ggrepel")) {
+#   install.packages("ggrepel", dependencies = TRUE)
+# }
+# library(ggrepel)
 
 #path - path to the scrnaseq matrices
 #concatenation type - [sum, avr, top_diff]
@@ -49,6 +49,7 @@ library(ggrepel)
 #' 
 #' @examples
 #' load_single_file("data/matrix.txt")
+#' @export
 load_single_file <- function(path) {
   set.seed(123)
   
@@ -73,8 +74,10 @@ load_single_file <- function(path) {
 #'
 #' @examples
 #' load_sc_rnaseq("data/matrices/", concatenation_type = 'sum')
+#' @export
 load_rnaseq <- function(path, concatenation_type = 'sum', annotation_sides = c('three_prime_UTR', 'exon', 'five_prime_UTR')) {
   set.seed(123)
+  `%>%` <- dplyr::`%>%`
   files <- list.files(path = "results/matrices/", pattern = "*_genes_count_matrix.txt", full.names = TRUE)
   files <- files[!grepl(pattern = 'summary', files)]
   files <- files[grepl(pattern =  paste(annotation_sides, collapse = "|"), files)]
@@ -127,9 +130,9 @@ load_rnaseq <- function(path, concatenation_type = 'sum', annotation_sides = c('
       if (concatenation_type == 'sum') {
         
         res_df <- annp_list %>%
-          group_by(name) %>%
-          summarize(counts = sum(counts, na.rm = TRUE), .groups = 'drop') %>%
-          select(name, counts)
+          dplyr::group_by(name) %>%
+          dplyr::summarize(counts = sum(counts, na.rm = TRUE), .groups = 'drop') %>%
+          dplyr::select(name, counts)
         
         res_df$counts <- as.numeric(res_df$counts)
         
@@ -138,10 +141,10 @@ load_rnaseq <- function(path, concatenation_type = 'sum', annotation_sides = c('
       } else if (concatenation_type == 'avg') {
         
         res_df <- annp_list %>%
-          group_by(name) %>%
-          summarize(counts = mean(counts, na.rm = TRUE), .groups = 'drop') %>%
-          select(name, counts) %>%
-          distinct()
+          dplyr::group_by(name) %>%
+          dplyr::summarize(counts = mean(counts, na.rm = TRUE), .groups = 'drop') %>%
+          dplyr::select(name, counts) %>%
+          dplyr::distinct()
         
         res_df$counts <- as.numeric(res_df$counts)
         
@@ -149,11 +152,11 @@ load_rnaseq <- function(path, concatenation_type = 'sum', annotation_sides = c('
       } else if (concatenation_type == 'top_diff') {
         
         res_df <- annp_list %>%
-          group_by(name) %>%
-          arrange(Length, .by_group = TRUE) %>%
-          slice_max(Length, n = 1) %>%
-          summarize(counts = mean(counts, na.rm = TRUE), .groups = 'drop') %>%
-          select(name, counts)
+          dplyr::group_by(name) %>%
+          dplyr::arrange(Length, .by_group = TRUE) %>%
+          dplyr::slice_max(Length, n = 1) %>%
+          dplyr::summarize(counts = mean(counts, na.rm = TRUE), .groups = 'drop') %>%
+          dplyr::select(name, counts)
         
         res_df$counts <- as.numeric(res_df$counts)
         
@@ -214,6 +217,7 @@ load_rnaseq <- function(path, concatenation_type = 'sum', annotation_sides = c('
 #'
 #' @examples
 #' count_genes(df, count = 'counts')
+#' @export
 count_genes <- function(df, count = 'counts') {
   set.seed(123)
   
@@ -262,6 +266,7 @@ count_genes <- function(df, count = 'counts') {
 #'
 #' @examples
 #' cells_threshold(data_frame)
+#' @export
 cells_threshold <- function(data) {
   set.seed(123)
   thresh_list <- list()
@@ -292,6 +297,7 @@ cells_threshold <- function(data) {
 #'
 #' @examples
 #' genes_per_set_plot(data_frame)
+#' @export
 genes_per_cell_plot <- function(data, cut_point = NaN) {
   set.seed(123)
   library(ggplot2)
@@ -301,17 +307,17 @@ genes_per_cell_plot <- function(data, cut_point = NaN) {
     cut_point <- quantile(genes$n, 0.5)
   }
   
-  plot = ggplot(genes, aes(x = set_name, y = n)) +
-    geom_point(size = 3) + 
-    geom_segment(aes(x = set_name, 
+  plot = ggplot2::ggplot(genes, aes(x = set_name, y = n)) +
+    ggplot2::geom_point(size = 3) + 
+    ggplot2::geom_segment(aes(x = set_name, 
                      xend = set_name, 
                      y = 0, 
                      yend = n)) + 
-    geom_hline(yintercept = cut_point, linetype = "dashed", color = "red") + 
-    labs(x = "Name", 
+    ggplot2::geom_hline(yintercept = cut_point, linetype = "dashed", color = "red") + 
+    ggplot2::labs(x = "Name", 
          y = "Genes") + 
-    coord_flip() +  
-    theme(axis.text.x = element_text(vjust = 0.6))
+    ggplot2::coord_flip() +  
+    ggplot2::theme(axis.text.x = element_text(vjust = 0.6))
   
   return(plot)
 }
@@ -330,6 +336,7 @@ genes_per_cell_plot <- function(data, cut_point = NaN) {
 #'
 #' @examples
 #' features_percentage(data, features_list)
+#' @export
 features_percentage <- function(data, features_list) {
   set.seed(123)
   
@@ -374,37 +381,38 @@ features_percentage <- function(data, features_list) {
 #'
 #' @examples
 #' features_perc_plot(data, count = 'counts', cut_point = 0)
+#' @export
 features_perc_plot <- function(data, count = 'counts', cut_point = 0) {
   set.seed(123)
   theme_set(theme_bw())
   
   if (count == 'counts') {
     
-    plot = ggplot(data, aes(x = set_name, y = perc_features_counts)) +
-      geom_point(size = 3, color = 'orange') + 
-      geom_segment(aes(x = set_name, 
+    plot = ggplot2::ggplot(data, aes(x = set_name, y = perc_features_counts)) +
+      ggplot2::geom_point(size = 3, color = 'orange') + 
+      ggplot2::geom_segment(aes(x = set_name, 
                        xend = set_name, 
                        y = 0, 
                        yend = perc_features_counts), color = 'orange') + 
-      geom_hline(yintercept = cut_point, linetype = "dashed", color = "red") + 
-      labs(x = "Name", 
+      ggplot2::geom_hline(yintercept = cut_point, linetype = "dashed", color = "red") + 
+      ggplot2::labs(x = "Name", 
            y = "Features counts [%]") + 
-      coord_flip() +  
-      theme(axis.text.x = element_text(vjust = 0.6))
+      ggplot2::coord_flip() +  
+      ggplot2::theme(axis.text.x = element_text(vjust = 0.6))
     
   } else if (count == 'genes') {
     
-    plot = ggplot(data, aes(x = set_name, y = perc_features)) +
-      geom_point(size = 3, color = 'orange') + 
-      geom_segment(aes(x = set_name, 
+    plot = ggplot2::ggplot(data, aes(x = set_name, y = perc_features)) +
+      ggplot2::geom_point(size = 3, color = 'orange') + 
+      ggplot2::geom_segment(aes(x = set_name, 
                        xend = set_name, 
                        y = 0, 
                        yend = perc_features), color = 'orange') + 
-      geom_hline(yintercept = cut_point, linetype = "dashed", color = "red") + 
-      labs(x = "Name", 
+      ggplot2::geom_hline(yintercept = cut_point, linetype = "dashed", color = "red") + 
+      ggplot2::labs(x = "Name", 
            y = "Features [%]") + 
-      coord_flip() +  
-      theme(axis.text.x = element_text(vjust = 0.6))
+      ggplot2::coord_flip() +  
+      ggplot2::theme(axis.text.x = element_text(vjust = 0.6))
     
   }
   
@@ -428,6 +436,7 @@ features_perc_plot <- function(data, count = 'counts', cut_point = 0) {
 #' @return A filtered dataset retaining only the cells meeting the threshold. If no threshold is provided, a message is printed, and no operation is performed.
 #' @examples
 #' filtered_data <- select_cells(data, threshold = 5000)
+#' @export
 select_cells <- function(data, threshold = NaN) {
   set.seed(123)
   if (!is.na(threshold)) {
@@ -474,6 +483,7 @@ select_cells <- function(data, threshold = NaN) {
 #'   no threshold is specified, a message will be printed instead.
 #' @examples
 #' filtered_data <- select_on_features(data = reduced_data, features_perc, counts = 'counts', threshold = 20)
+#' @export
 select_on_features <- function(data, features_perc, count = 'counts', threshold = NaN) {
   set.seed(123)
   if (!is.na(threshold)) {
@@ -518,6 +528,7 @@ select_on_features <- function(data, features_perc, count = 'counts', threshold 
 #' @return A normalized dataset with log2-transformed values.
 #' @examples
 #' normalized_data <- normalize_data(data)
+#' @export
 normalize_data <- function(data, type = 'counts',  factor = 1000000) {
   set.seed(123)
   
@@ -553,8 +564,10 @@ normalize_data <- function(data, type = 'counts',  factor = 1000000) {
 #' @return A data frame containing variance, mean, and occurrence percentage for each gene.
 #' @examples
 #' gene_variance_data <- genes_variance(data)
+#' @export
 genes_variance <- function(data, min = 0.5) {
   set.seed(123)
+  `%>%` <- dplyr::`%>%`
   gene_variance <- apply(data, 1, var)
   gene_mean <- apply(data, 1, mean)
   gene_mean <- apply(data, 1, mean)
@@ -566,7 +579,7 @@ genes_variance <- function(data, min = 0.5) {
   variance_df <- data.frame(Gene = rownames(data), variance = gene_variance, avg = gene_mean, pct_occurrence = pct_occurrence)
   
   variance_df <- variance_df %>%
-    arrange(desc(variance))
+    dplyr::arrange(desc(variance))
   
   
   return(variance_df)
@@ -587,16 +600,17 @@ genes_variance <- function(data, min = 0.5) {
 #' @return A ggplot2 scatter plot object.
 #' @examples
 #' var_gene_plot <- var_plot(var_data)
+#' @export
 var_plot <- function(var_data, side = c('equal', 'variable'), n_top = 20) {
   set.seed(123)
-  
+  `%>%` <- dplyr::`%>%`
   var_genes2 <- var_genes[order(var_genes$variance, var_genes$avg, decreasing = c(TRUE, FALSE)), ]
   
   var_genes2$color = 'bisque'
   
   subset1 <- var_genes2 %>%
-    filter(variance > quantile(variance, 0.9)) %>%
-    filter(avg > quantile(avg, 0.10))
+    dplyr::filter(variance > quantile(variance, 0.9)) %>%
+    dplyr::filter(avg > quantile(avg, 0.10))
   
   
   subset1 <- subset1[order(subset1$variance, subset1$avg, decreasing = TRUE), ]
@@ -606,8 +620,8 @@ var_plot <- function(var_data, side = c('equal', 'variable'), n_top = 20) {
   
   
   subset2 <- var_genes2 %>%
-    filter(avg > quantile(avg, 0.9)) %>%
-    filter(variance < quantile(variance, 0.10))
+    dplyr::filter(avg > quantile(avg, 0.9)) %>%
+    dplyr::filter(variance < quantile(variance, 0.10))
   
   subset2 <- subset2[order(subset2$avg, subset2$variance , decreasing = c(TRUE, FALSE)), ]
   subset2$color <- 'brown'
@@ -631,11 +645,11 @@ var_plot <- function(var_data, side = c('equal', 'variable'), n_top = 20) {
   
   
   
-  plot <- ggplot(var_genes2, aes(x = variance, y = avg)) +
-    geom_point(size = 3, color = var_genes2$color) + 
-    geom_text_repel(data = top_genes, aes(label = Gene), color = top_genes$color, max.overlaps = 50) +  
-    labs(x = "var", y = "avg") +
-    theme_minimal()
+  plot <- ggplot2::ggplot(var_genes2, aes(x = variance, y = avg)) +
+    ggplot2::geom_point(size = 3, color = var_genes2$color) + 
+    ggrepel::geom_text_repel(data = top_genes, aes(label = Gene), color = top_genes$color, max.overlaps = 50) +  
+    ggplot2::labs(x = "var", y = "avg") +
+    ggplot2::theme_minimal()
   
   
   return(plot)
@@ -655,8 +669,10 @@ var_plot <- function(var_data, side = c('equal', 'variable'), n_top = 20) {
 #' @return A data frame of selected genes based on the specified criterion.
 #' @examples
 #' variable_genes <- get_var_genes(var_data, side = 'variable')
+#' @export
 get_var_genes <- function(var_data, side = 'equal') {
   set.seed(123)
+  `%>%` <- dplyr::`%>%`
   if (!side %in% c('equal','variable')) {
     
     print('Side must be invluded in: "equal" or "variable"')
@@ -666,8 +682,8 @@ get_var_genes <- function(var_data, side = 'equal') {
   var_genes2 <- var_genes[order(var_genes$variance, var_genes$avg, decreasing = c(TRUE, FALSE)), ]
   
   variable <- var_genes2 %>%
-    filter(variance > quantile(variance, 0.75)) %>%
-    filter(avg > quantile(avg, 0.25))
+    dplyr::filter(variance > quantile(variance, 0.75)) %>%
+    dplyr::filter(avg > quantile(avg, 0.25))
   
   
   variable <- variable[order(variable$variance, variable$avg, decreasing = TRUE), ]
@@ -675,8 +691,8 @@ get_var_genes <- function(var_data, side = 'equal') {
   
   
   equal <- var_genes2 %>%
-    filter(avg > quantile(avg, 0.75)) %>%
-    filter(variance < quantile(variance, 0.25))
+    dplyr::filter(avg > quantile(avg, 0.75)) %>%
+    dplyr::filter(variance < quantile(variance, 0.25))
   
   equal <- equal[order(equal$avg, equal$variance , decreasing = c(TRUE, FALSE)), ]
   
@@ -707,6 +723,7 @@ get_var_genes <- function(var_data, side = 'equal') {
 #' @return An object of class 'prcomp' containing PCA results.
 #' @examples
 #' pca_result <- get_PCA(data)
+#' @export
 get_PCA <- function(data) {
   set.seed(123)
   
@@ -730,6 +747,7 @@ get_PCA <- function(data) {
 #' @return A ggplot2 object showing the knee plot.
 #' @examples
 #' knee_plot <- get_knee(pca_result)
+#' @export
 get_knee <- function(pca_data) {
   set.seed(123)
   
@@ -746,12 +764,12 @@ get_knee <- function(pca_data) {
   
   
   
-  plot <- ggplot(knee_data, aes(x = Component, y = Variance)) +
-    geom_line(color = "blue", size = 1) +
-    geom_point(size = 3, color = "red") +
-    labs(x = "Principal Component",
+  plot <- ggplot2::ggplot(knee_data, aes(x = Component, y = Variance)) +
+    ggplot2::geom_line(color = "blue", size = 1) +
+    ggplot2::geom_point(size = 3, color = "red") +
+    ggplot2::labs(x = "Principal Component",
          y = "Explained Variance (%)") +
-    theme_minimal()
+    ggplot2::theme_minimal()
   
   return(plot)
 }
@@ -768,6 +786,7 @@ get_knee <- function(pca_data) {
 #' @return A ggplot2 scatter plot of the first two principal components.
 #' @examples
 #' pca_scatter <- pca_plot(pca_result)
+#' @export
 pca_plot <- function(pca_data) {
   set.seed(123)
   
@@ -775,12 +794,12 @@ pca_plot <- function(pca_data) {
   pca$Sample <- rownames(pca_data$x) 
   colnames(pca) <- c("PC1", "PC2", "Sample")  
   
-  plot <- ggplot(pca, aes(x = PC1, y = PC2)) +  
-    geom_point(size = 3, color = 'brown') + 
-    labs(x = "Principal Component 1", 
+  plot <- ggplot2::ggplot(pca, aes(x = PC1, y = PC2)) +  
+    ggplot2::geom_point(size = 3, color = 'brown') + 
+    ggplot2::labs(x = "Principal Component 1", 
          y = "Principal Component 2") +                                
-    theme_minimal() +
-    theme(legend.position = "none") 
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "none") 
   
   
   return(plot)
@@ -804,29 +823,30 @@ pca_plot <- function(pca_data) {
 #' @return A ggplot2 UMAP plot with DBSCAN clusters.
 #' @examples
 #' umap_plot <- umap_db_scan(pca_result)
+#' @export
 umap_db_scan <- function(pca_data, pc = 10, eps = 0.5, min_dist = 0.01, n_neighbors = 5, minPts = 5) {
   set.seed(123)
   
-  umap_config <- umap.defaults
+  umap_config <- umap::umap.defaults
   umap_config$n_neighbors <- n_neighbors
   umap_config$min_dist <- min_dist
   umap_config$n_components <- 2
   
   
-  umap_result <- umap(pca_result$x[, 1:pc], config = umap_config) 
+  umap_result <- umap::umap(pca_result$x[, 1:pc], config = umap_config) 
   
   umap_data <- as.data.frame(umap_result$layout)
   colnames(umap_data) <- c("UMAP1", "UMAP2")
-  dbscan_result <- dbscan(umap_data, eps = eps, minPts = n_neighbors) 
+  dbscan_result <- dbscan::dbscan(umap_data, eps = eps, minPts = n_neighbors) 
   
   umap_data$cluster <- as.factor(dbscan_result$cluster)
   
-  plot <- ggplot(umap_data, aes(x = UMAP1, y = UMAP2, color = cluster)) +
-    geom_point(size = 3) +
-    labs(x = "UMAP Dimension 1", 
+  plot <- ggplot2::ggplot(umap_data, aes(x = UMAP1, y = UMAP2, color = cluster)) +
+    ggplot2::geom_point(size = 3) +
+    ggplot2::labs(x = "UMAP Dimension 1", 
          y = "UMAP Dimension 2", 
          color = "Cluster") +
-    theme_minimal()
+    ggplot2::theme_minimal()
   
   return(plot)
   
@@ -849,20 +869,21 @@ umap_db_scan <- function(pca_data, pc = 10, eps = 0.5, min_dist = 0.01, n_neighb
 #' @return A data frame mapping sample names to cluster assignments.
 #' @examples
 #' clusters <- get_clusters(pca_result)
+#' @export
 get_clusters <- function(pca_data, pc = 10, eps = 0.5, min_dist = 0.01, n_neighbors = 5, minPts = 5) {
   set.seed(123)
   
-  umap_config <- umap.defaults
+  umap_config <- umap::umap.defaults
   umap_config$n_neighbors <- n_neighbors
   umap_config$min_dist <- min_dist
   umap_config$n_components <- 2
   
   
-  umap_result <- umap(pca_result$x[, 1:pc], config = umap_config) 
+  umap_result <- umap::umap(pca_result$x[, 1:pc], config = umap_config) 
   
   umap_data <- as.data.frame(umap_result$layout)
   colnames(umap_data) <- c("UMAP1", "UMAP2")
-  dbscan_result <- dbscan(umap_data, eps = eps, minPts = n_neighbors) 
+  dbscan_result <- dbscan::dbscan(umap_data, eps = eps, minPts = n_neighbors) 
   
   umap_data$cluster <- as.factor(dbscan_result$cluster)
   
@@ -884,6 +905,7 @@ get_clusters <- function(pca_data, pc = 10, eps = 0.5, min_dist = 0.01, n_neighb
 #' @return A data frame of genes with log-fold change and adjusted p-values for each cluster.
 #' @examples
 #' cluster_stats <- get_cluster_stats(data, clusters)
+#' @export
 get_cluster_stats <- function(data, clusters) {
   set.seed(123)
   
@@ -928,6 +950,7 @@ get_cluster_stats <- function(data, clusters) {
 #' @return A heatmap visualization of the selected genes.
 #' @examples
 #' heatmap_plot <- heatmap_plot(display_data, selected_genes)
+#' @export
 heatmap_plot <- function(display_data, features, features_metadata = NaN, min_value = 0.5) {
   set.seed(123)
   
@@ -943,7 +966,7 @@ heatmap_plot <- function(display_data, features, features_metadata = NaN, min_va
   display_data <- norm_data[rownames(norm_data) %in% features,]
   
   
-  if (!is.na(features_metadata)) {
+  if (!is.na(features_metadata[1])) {
     if (length(features) == length(features_metadata)) {
       
       meta = data.frame(name = features, type = features_metadata)
@@ -961,7 +984,7 @@ heatmap_plot <- function(display_data, features, features_metadata = NaN, min_va
   
   display_data <- rbind(display_data, mean)
   
-  pheatmap((display_data), 
+  pheatmap::pheatmap(display_data, 
            clustering_distance_rows = "euclidean",
            clustering_distance_cols = "euclidean",
            color = colorRampPalette(c("blue", "white", "red"))(100),  
