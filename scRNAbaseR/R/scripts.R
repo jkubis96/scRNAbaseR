@@ -54,7 +54,7 @@ load_single_file <- function(path) {
   set.seed(123)
   
   data <- read.table(path, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-  data <- distinct(data)
+  data <- dplyr::distinct(data)
   colnames(data)[7] <- 'counts'
   
   return(data)
