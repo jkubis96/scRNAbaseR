@@ -1,0 +1,509 @@
+---
+title: "Report - scRNAseq LUTHOR analyses"
+author: "Analyses author: Jakub Kubiś"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+\
+
+
+```{r  include=FALSE}
+
+# requirements
+
+required_packages <- c("DT", "openxlsx", "plotly")
+
+# Install any packages that are not already installed
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+}
+
+
+
+if (!requireNamespace('scRNAbaseR', quietly = TRUE)) {
+  
+    install.packages("https://github.com/jkubis96/scRNAbaseR/raw/refs/heads/main/package/scRNAbaseR_0.1.0.tar.gz", repos = NULL, type = "source")
+  }
+
+# requirements loading
+
+# library(scRNAbaseR)
+# source('scripts.R')
+library(scRNAbaseR)
+library(DT)
+library(openxlsx)
+library(plotly)
+
+
+
+# provide project name
+project_name <- 'LUTHOR'
+
+full_path <- file.path(getwd(), paste0(project_name, '-', Sys.Date()))
+
+dir.create(full_path)
+dir.create(file.path(full_path, 'matrices'))
+
+
+```
+
+
+
+```{r  message=FALSE, warning=FALSE, include=FALSE}
+
+# provide path to matrices
+path_to_matrices = 'results/matrices/'
+
+datas <- load_rnaseq(path = path_to_matrices, concatenation_type = 'sum', annotation_sides = c('three_prime_UTR', 'exon', 'five_prime_UTR'))
+
+analysed_data <- datas$gene_id
+
+rm(datas)
+
+
+write.csv(analysed_data, file.path(full_path, 'matrices', 'raw_counts.csv'), quote = FALSE)
+
+
+
+genes <- count_genes(analysed_data, count = 'genes')
+
+
+```
+
+
+## Quality Control steps
+
+\
+
+#### Genes per cell / set thresholds - percentiles
+
+
+```{r  include=TRUE, echo=FALSE, warning=FALSE}
+thr <- cells_threshold(genes)
+
+thr
+```
+
+
+\
+
+\
+
+
+#### Genes per cell thresholds - plot
+
+
+```{r  include=TRUE, echo=FALSE, message = FALSE, fig.height=8, fig.width=6}
+plot <- genes_per_cell_plot(genes, cut_point = thr$perc.33)
+
+
+plot
+
+```
+
+
+
+```{r  include=FALSE, echo=FALSE, warning=FALSE}
+perc <- features_percentage(analysed_data, features_list = rownames(analysed_data)[grepl('MT-', rownames(analysed_data))])
+
+```
+
+
+\
+
+\
+
+
+#### MitoPercent - plot
+
+
+```{r  include=TRUE, echo=FALSE, message = FALSE, fig.height=8, fig.width=6}
+
+
+plot <- features_perc_plot(data = perc, count = 'counts', cut_point = 20) 
+
+plot
+
+```
+
+\
+
+
+#### Quality control reports (fastp):
+
+
+
+```{r  message=FALSE, warning=FALSE, include=FALSE}
+
+# provide path to reports from fastp
+path_to_reports <- 'results/'
+
+raport_list <- list.files(path = path_to_reports, pattern = "*_quality_", full.names = TRUE)
+
+dir.create(file.path(full_path, 'qc_reports'))
+
+for (f in raport_list) {
+  file.copy(f, file.path(full_path, 'qc_reports', basename(f)), overwrite = FALSE, copy.mode = TRUE, copy.date = FALSE)
+}
+
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+setwd(full_path)
+
+raport_list <- list.files(path = file.path(getwd(), 'qc_reports'), pattern = "*_quality_", full.names = TRUE)
+
+for (file in raport_list) {
+  
+  cat(sprintf("- [%s](%s)\n", basename(file), file.path('qc_reports', basename(file))))
+}
+
+
+```
+
+\
+
+\
+
+
+```{r  echo = FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+reduced_data <- select_cells(data = analysed_data, threshold = thr$perc.33)
+reduced_data <- select_on_features(data = reduced_data, features_perc = perc, count = 'counts', threshold = 20)
+
+
+```
+
+
+\
+
+
+## Genes variance analysis
+
+\
+
+
+#### Variance - table
+
+
+```{r  echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+
+norm_data <- normalize_data(data = reduced_data, type = 'counts',  factor = 1000000)
+
+
+var_genes <- genes_variance(norm_data)
+
+
+datatable(var_genes, filter = 'top')
+
+```
+
+\
+
+\
+
+#### Genes variance - plot
+
+
+```{r  echo=FALSE, fig.height=8, fig.width=12}
+
+
+plot <- var_plot(var_data = var_genes)
+
+plot
+
+
+```
+
+\
+
+
+\
+
+#### Stable markers - gold color on plot
+
+
+```{r  echo=FALSE}
+
+setwd(full_path)
+
+eq <- get_var_genes(var_data = var_data, side = 'equal')
+write.xlsx(eq, file.path(getwd(), 'matrices', 'stable_markers.xlsx'))
+
+datatable(eq, filter = 'top')
+
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+
+setwd(full_path)
+
+
+cat(sprintf("- [%s](%s)\n", 'Stable markers', file.path('matrices', 'stable_markers.xlsx')))
+
+
+```
+
+
+\
+
+\
+
+
+#### Variable markers - orange color on plot
+
+
+```{r  echo=FALSE}
+
+setwd(full_path)
+
+vars <- get_var_genes(var_data = var_data, side = 'variable')
+write.xlsx(vars, file.path(getwd(), 'matrices', 'variable_markers.xlsx'))
+
+datatable(vars, filter = 'top')
+
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+setwd(full_path)
+
+  
+cat(sprintf("- [%s](%s)\n", 'Variable markers', file.path('matrices', 'variable_markers.xlsx')))
+
+
+```
+
+
+
+
+```{r  message=FALSE, warning=FALSE, include=TRUE, echo=FALSE}
+
+
+
+pca_result <- get_PCA(norm_data)
+
+
+```
+
+
+\
+
+\
+
+
+#### PCA - knee plot
+
+
+
+```{r  echo=FALSE, fig.height=6, fig.width=8}
+
+
+plot <- get_knee(pca_result)
+
+ggplotly(plot)
+
+
+```
+
+
+\
+
+\
+
+
+
+#### PCA - plot
+
+
+```{r echo=FALSE, fig.height=6, fig.width=8}
+
+
+
+plot <- pca_plot(pca_result)
+
+ggplotly(plot)
+
+
+
+```
+
+
+\
+
+\
+
+#### UMAP (dbscan) - plot
+
+
+```{r  echo=FALSE, fig.height=6, fig.width=8}
+
+plot <- umap_db_scan(pca_data = pca_result, pc = 4, eps = 1, min_dist = 0.01, n_neighbors = 5, minPts = 6)
+
+ggplotly(plot)
+
+```
+
+
+\
+
+\
+
+
+#### Clusters
+
+
+```{r  echo=FALSE, include=TRUE}
+
+clusters <- get_clusters(pca_data = pca_result, pc = 6, eps = 1, min_dist = 0.01, n_neighbors = 5, minPts = 6)
+
+datatable(clusters, filter = 'top')
+
+
+```
+
+\
+
+\
+
+
+#### Cluster markers
+
+```{r  message=FALSE, warning=FALSE, include=TRUE, echo=FALSE}
+
+setwd(full_path)
+
+if (length(clusters) > 1) {
+
+  stats = get_cluster_stats(data = norm_data, clusters = clusters)
+  stats = stats[stats$log_FC > 0.5 & stats$adj_pval <= 0.05,]
+  stats = stats[order(stats$log_FC, stats$adj_pval, decreasing = c(T,F)), ]
+  
+  write.xlsx(stats, file.path(getwd(), 'matrices', 'clusters_statistics.xlsx'))
+
+  
+  `%>%` <- dplyr::`%>%`
+  
+  stats = stats %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 20, wt = log_FC)
+  
+  
+  
+  datatable(stats, filter = 'top')
+  
+  
+} 
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+setwd(full_path)
+
+if (length(clusters) > 1) {
+
+
+  cat(sprintf("- [%s](%s)\n", 'Clusters statistics', file.path('matrices', 'clusters_statistics.xlsx')))
+
+} else {
+  
+  cat('Detected only one cluster. Lack of cluster markers to display.')
+  
+}
+
+```
+
+
+\
+
+\
+
+#### Normalized data - table
+
+
+```{r message=FALSE, warning=FALSE, include=TRUE, echo=FALSE}
+
+setwd(full_path)
+
+datatable(norm_data, filter = 'top')
+
+write.xlsx(norm_data, file.path(getwd(), 'matrices', 'normalized_data.xlsx'))
+
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+setwd(full_path)
+
+cat(sprintf("- [%s](%s)\n", 'Normalized data', file.path('matrices', 'normalized_data.xlsx')))
+
+```
+
+
+\
+
+\
+
+
+#### Markers expression
+
+```{r echo=FALSE, fig.height=120, fig.width=12, warning=FALSE}
+
+markers = read.xlsx('sm_markers.xlsx')
+
+# unique(markers$NAMES)[grepl('Muscle', unique(markers$NAMES))]
+
+markers = markers[markers$NAMES %in% c("Neoblast", "Muscle"  ),]
+
+plot = heatmap_plot(display_data = norm_data, features = markers$SMESG, features_metadata = markers$NAMES, min_value = 0.5)
+
+plot
+
+```
+
+\
+
+\
+
+
+##### **Disclaimer**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+cat('
+The analysis was conducted using the **non-profit pipelines** scRNAbase & scRNAbaseR developed by **Jakub Kubiś** - **JBioSystem©**.  
+For more information, please contact: **[jbiosystem@gmail.com](mailto:jbiosystem@gmail.com)** 
+
+This pipeline and the report were created at the **Laboratory of Single Cell Analyses**, Institute of Bioorganic Chemistry, Polish Academy of Sciences. 
+
+Our website:
+
+**[LSCA Website](https://portal.ichb.pl/laboratory-of-single-cell-analyses/)**
+
+Contact:
+
+**[lab.single.cell@ibch.poznan.pl](mailto:lab.single.cell@ibch.poznan.pl)** 
+
+')
+```
+
+\
+\
+
+
+```{r echo=FALSE, eval=FALSE}
+# Render the R Markdown file
+
+rmarkdown::render('raport_create.Rmd', output_file = file.path(full_path, paste0(project_name, '.html')))
+```
