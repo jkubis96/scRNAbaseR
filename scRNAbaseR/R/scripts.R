@@ -1,44 +1,3 @@
-# #scripts
-# if (!require("dplyr")) {
-#   install.packages("dplyr", dependencies = TRUE)
-# }
-# library(dplyr)
-# 
-# # Sprawdzenie i instalacja pakietu pheatmap
-# if (!require("pheatmap")) {
-#   install.packages("pheatmap", dependencies = TRUE)
-# }
-# library(pheatmap)
-# 
-# # Sprawdzenie i instalacja pakietu umap
-# if (!require("umap")) {
-#   install.packages("umap", dependencies = TRUE)
-# }
-# library(umap)
-# 
-# # Sprawdzenie i instalacja pakietu dbscan
-# if (!require("dbscan")) {
-#   install.packages("dbscan", dependencies = TRUE)
-# }
-# library(dbscan)
-# 
-# # Sprawdzenie i instalacja pakietu ggplot2
-# if (!require("ggplot2")) {
-#   install.packages("ggplot2", dependencies = TRUE)
-# }
-# library(ggplot2)
-# 
-# # Sprawdzenie i instalacja pakietu ggrepel
-# if (!require("ggrepel")) {
-#   install.packages("ggrepel", dependencies = TRUE)
-# }
-# library(ggrepel)
-
-#path - path to the scrnaseq matrices
-#concatenation type - [sum, avr, top_diff]
-#concatenation type - [annotation_type gene_id,gene_name,transcript_id,transcript_name]
-
-
 #' Load Single File from featureCounts output
 #' 
 #' This function loads a single scRNA-seq / RNA-seq data file, removes duplicate rows, and renames the 7th column to 'counts'.
@@ -963,7 +922,7 @@ heatmap_plot <- function(display_data, features, features_metadata = NaN, min_va
   
   rownames(mean)[1] <- 'expressed_mean'
   
-  display_data <- norm_data[rownames(norm_data) %in% features,]
+  display_data <- display_data[rownames(display_data) %in% features,]
   
   
   if (!is.na(features_metadata[1])) {
