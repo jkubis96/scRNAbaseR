@@ -509,6 +509,8 @@ normalize_data <- function(data, type = 'counts',  factor = 1000000) {
   }
   
   
+  data[is.na(data)] <- 0
+  
   return(data)
 }
 
