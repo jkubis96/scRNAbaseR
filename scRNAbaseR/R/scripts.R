@@ -531,13 +531,10 @@ genes_variance <- function(data, min = 0.5) {
   `%>%` <- dplyr::`%>%`
   gene_variance <- apply(data, 1, var)
   gene_mean <- apply(data, 1, mean)
-  gene_mean <- apply(data, 1, mean)
-  threshold <- 0.5
   pct_occurrence <- apply(data, 1, function(row) mean(row > min) * 100)
   
   
-  
-  variance_df <- data.frame(Gene = rownames(data), variance = gene_variance, avg = gene_mean, pct_occurrence = pct_occurrence)
+  variance_df <- data.frame(gene = rownames(data), variance = gene_variance, avg = gene_mean, pct_occurrence = pct_occurrence)
   
   variance_df <- variance_df %>%
     dplyr::arrange(desc(variance))
@@ -547,6 +544,7 @@ genes_variance <- function(data, min = 0.5) {
   
   
 }
+
 
 
 
