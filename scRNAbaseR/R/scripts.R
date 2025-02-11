@@ -606,7 +606,7 @@ var_plot <- function(var_data, side = c('equal', 'variable'), n_top = 20) {
   
   plot <- ggplot2::ggplot(var_genes2, aes(x = variance, y = avg)) +
     ggplot2::geom_point(size = 3, color = var_genes2$color) + 
-    ggrepel::geom_text_repel(data = top_genes, aes(label = Gene), color = top_genes$color, max.overlaps = 50) +  
+    ggrepel::geom_text_repel(data = top_genes, aes(label = gene), color = top_genes$color, max.overlaps = 50) +  
     ggplot2::labs(x = "var", y = "avg") +
     ggplot2::theme_minimal()
   
@@ -688,7 +688,7 @@ get_PCA <- function(data) {
   
   vars <- get_var_genes(var_data = var_data, side = 'variable')
   
-  data_scaled <- scale(t(reduced_data[vars$Gene,]))
+  data_scaled <- scale(t(reduced_data[vars$gene,]))
   
   pca_result <- prcomp(data_scaled, center = TRUE, scale. = TRUE)
   
@@ -861,36 +861,69 @@ get_clusters <- function(pca_data, pc = 10, eps = 0.5, min_dist = 0.01, n_neighb
 #' 
 #' @param data A matrix or data frame of gene expression data.
 #' @param clusters A data frame of cluster assignments for each sample.
+#' @param only_pos A logical value indicating whether to retain only positively differentially 
+#'   expressed genes (TRUE) or include both upregulated and downregulated genes (FALSE). 
+#'   Default is TRUE.
+#' @param min_pct A numeric value specifying the minimum percentage of cells in a cluster that 
+#'   must express a gene for it to be considered. Default is 0.05 (5%).
 #' @return A data frame of genes with log-fold change and adjusted p-values for each cluster.
 #' @examples
 #' cluster_stats <- get_cluster_stats(data, clusters)
 #' @export
-get_cluster_stats <- function(data, clusters) {
+get_cluster_stats <- function(data, clusters, only_pos = TRUE, min_pct = 0.05) {
   set.seed(123)
   
-  cluster_df <- data
   
   col_map <- setNames(clusters$cluster, clusters$name)
   
-  colnames(cluster_df) <- col_map[colnames(cluster_df)]
+  colnames(data) <- col_map[colnames(data)]
   
   
   results <- data.frame()
-  
+
+
   for (c in unique(clusters$cluster)) {
-    tmp1 = cluster_df[,colnames(cluster_df) %in% c]
+
+
+    cat(paste('\n\n Cluster ->  ', c, '- searching marker genes... \n\n' ))
+
+
+    tmp1 = data[,colnames(data) %in% c]
     tmp_results <- data.frame(genes = rownames(tmp1))
-    tmp2 = cluster_df[,!colnames(cluster_df) %in% c]
+    tmp2 = data[,!colnames(data) %in% c]
+    tmp_sum <- tmp1
+    tmp_sum[tmp_sum > 0] <- 1
+    tmp_results$perc <- rowSums(tmp_sum)/ncol(tmp_sum)
+    rm(tmp_sum)
     t1 = rowMeans(tmp1)
     t2 = rowMeans(tmp2)
-    tmp_results$log_FC<- log2((rowMeans(tmp1) + (min(t1[t1 > 0])/2))  / (rowMeans(tmp2) + (min(t2[t2 > 0])/2)))
-    tmp_results$adj_pval <- apply(cluster_df, 1, function(gene_expression) {
-      wilcox.test(gene_expression[colnames(cluster_df) %in% c],
-                  gene_expression[!colnames(cluster_df) %in% c])$p.value})
+    tmp_results$avg_logFC <- log2((t1 + (min(t1[t1 > 0])/2))  / (t2 + (min(t2[t2 > 0])/2)))
+    tmp_results <- tmp_results[tmp_results$perc > min_pct, , drop = FALSE]
+
+
+
+    if (only_pos == TRUE) {
+
+      tmp_results <- tmp_results[tmp_results$avg_logFC > 0,]
+      tmp_data <- data[match(tmp_results$genes, rownames(data)), ]
+
+      tmp_results$p_val <- apply(tmp_data, 1, function(gene_expression) {
+        wilcox.test(gene_expression[colnames(tmp_data) %in% c],
+                    gene_expression[!colnames(tmp_data) %in% c])$p.value})
+
+    } else {
+
+      tmp_results$p_val <- apply(data, 1, function(gene_expression) {
+        wilcox.test(gene_expression[colnames(data) %in% c],
+                    gene_expression[!colnames(data) %in% c])$p.value})
+    }
+
+
     tmp_results$cluster <- c
     results <- rbind(results, tmp_results)
   }
-  
+
+
   
   return(results)
   

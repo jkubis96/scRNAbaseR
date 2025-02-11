@@ -4,12 +4,19 @@
 \alias{get_cluster_stats}
 \title{Generate cluster statistics}
 \usage{
-get_cluster_stats(data, clusters)
+get_cluster_stats(data, clusters, only_pos = TRUE, min_pct = 0.05)
 }
 \arguments{
 \item{data}{A matrix or data frame of gene expression data.}
 
 \item{clusters}{A data frame of cluster assignments for each sample.}
+
+\item{only_pos}{A logical value indicating whether to retain only positively differentially 
+expressed genes (TRUE) or include both upregulated and downregulated genes (FALSE). 
+Default is TRUE.}
+
+\item{min_pct}{A numeric value specifying the minimum percentage of cells in a cluster that 
+must express a gene for it to be considered. Default is 0.05 (5%).}
 }
 \value{
 A data frame of genes with log-fold change and adjusted p-values for each cluster.
