@@ -861,14 +861,11 @@ get_clusters <- function(pca_data, pc = 10, eps = 0.5, min_dist = 0.01, n_neighb
 #' 
 #' @param data A matrix or data frame of gene expression data.
 #' @param clusters A data frame of cluster assignments for each sample.
-#' @param only_pos A logical value indicating whether to retain only positively differentially 
-#'   expressed genes (TRUE) or include both upregulated and downregulated genes (FALSE). 
-#'   Default is TRUE.
-#' @param min_pct A numeric value specifying the minimum percentage of cells in a cluster that 
-#'   must express a gene for it to be considered. Default is 0.05 (5%).
+#' @param only_pos A logical value indicating whether to retain only positively differentially expressed genes (TRUE) or include both upregulated and downregulated genes (FALSE). Default is TRUE.
+#' @param min_pct A numeric value specifying the minimum percentage of cells in a cluster that must express a gene for it to be considered. Default is 0.05.
 #' @return A data frame of genes with log-fold change and adjusted p-values for each cluster.
 #' @examples
-#' cluster_stats <- get_cluster_stats(data, clusters)
+#' cluster_stats <- get_cluster_stats(data, clusters, only_pos = TRUE, min_pct = 0.05)
 #' @export
 get_cluster_stats <- function(data, clusters, only_pos = TRUE, min_pct = 0.05) {
   set.seed(123)
